@@ -1,6 +1,6 @@
 [org  0x7c00]
 
-init:
+main:
   ; Set the stack
   mov bp, 0x9000
   mov sp, bp
@@ -9,11 +9,30 @@ init:
   mov bx, MSG_REAL_MODE
   call  print_string_bios
 
+  call load_kernel
+
+
   ; Switch to protected mode.
   ; Note that we never return from here.
   jmp switch_to_pm
 
-MSG_REAL_MODE db 'Started in 16-bit Real Mode', 0
+load_kernel:
+  pusha
+
+  mov bx, MSG_LOAD_KERNEL
+  call print_string_bios
+
+  mov bx, KERNEL_OFFSET
+  mov dh, 15              ; Load 15 sector
+  mov dl, BOOT_DRIVE
+  call disk_load
+
+  popa
+  ret
+
+; ==============================
+; FUNCTIONS
+; ==============================
 
 ; ==============================
 ; Print string using BIOS
@@ -34,6 +53,36 @@ print_string_bios_loop:
 print_string_bios_finish:
   popa
   ret
+
+; ==============================
+; Load from disk
+; ==============================
+
+disk_load:
+  pusha
+
+  push dx
+  mov ah, 0x02
+  mov al, dh    ; Read DH sectors
+  mov ch, 0x00  ; Select chlinder 0
+  mov cl, 0x02  ; Start reading from 2nd sector (i.e. after the boot sector)
+  mov dh, 0x00  ; Select head 0
+  int 0x13
+
+  jc disk_error
+
+  pop dx
+  cmp dh, al      ; if AL (sectors read) != DH (sectors expected)
+  jne disk_error  ;   display error message
+
+  popa
+  ret
+
+disk_error:
+  mov bx, MSG_DISK_ERR
+  call print_string_bios
+  hlt
+  jmp $-1
 
 ; ==============================
 ; GDT
@@ -72,9 +121,6 @@ gdt_descriptor:
   dw gdt_end - gdt_start - 1
   dd gdt_start
 
-CODE_SEG equ gdt_code - gdt_start ; 0x8
-DATA_SEG equ gdt_data - gdt_start ; 0x10
-
 ; ==================================
 ; Protected mode
 ; ==================================
@@ -108,10 +154,9 @@ BEGIN_PM:
   mov ebx, MSG_PROT_MODE
   call print_string_pm
 
-  hlt
-  jmp $
+  call  KERNEL_OFFSET
 
-MSG_PROT_MODE db 'Successfully landed in 32-bit Protected Mode', 0
+  jmp $
 
 ; ===============================
 ; Print string in protected mode
@@ -138,11 +183,19 @@ print_string_pm_finish:
   popa
   ret
 
-; ============================
-; Exit for debugging
-; ============================
+; ===============================
+; Constants
+; ===============================
 
-exit:
+MSG_REAL_MODE   db 'Started in 16-bit Real Mode', 0
+MSG_DISK_ERR    db  "Disk read error", 0
+MSG_LOAD_KERNEL db  "Loading kernel into memory...", 0
+MSG_PROT_MODE   db 'Successfully landed in 32-bit Protected Mode', 0
+KERNEL_OFFSET   equ 0x1000
+BOOT_DRIVE      equ 0
+CODE_SEG equ gdt_code - gdt_start ; 0x8
+DATA_SEG equ gdt_data - gdt_start ; 0x10
+
 
 ; ============================
 ; Bootsector padding
