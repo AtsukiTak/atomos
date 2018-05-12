@@ -11,7 +11,6 @@ main:
 
   call load_kernel
 
-
   ; Switch to protected mode.
   ; Note that we never return from here.
   jmp switch_to_pm
