@@ -1,2 +1,4 @@
 boot.bin
 *.swp
+*.o
+atomos.iso
