@@ -1,4 +1,3 @@
-boot.bin
 *.swp
-*.o
-atomos.iso
+/target
+**/*.rs.bk
