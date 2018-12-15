@@ -1,3 +1,8 @@
+/tools/cellar/*
+/tools/bin/*
+!/tools/cellar/.gitkeep
+!/tools/bin/.gitkeep
+
 *.swp
 /target
 **/*.rs.bk
