@@ -1,16 +1,13 @@
 TGT := riscv32imac-unknown-none-elf
+LIBATOMOS := target/$(TGT)/debug/libatomos.a
+SRCDIR := src
 CELLAR_DIR := tools/cellar
 TL_BIN_DIR := tools/bin
 
-build: target/$(TGT)/debug/atomos
+build: $(LIBATOMOS)
 
-target/$(TGT)/debug/atomos:
+$(LIBATOMOS): $(SRCDIR)/*
 	cargo build --target $(TGT)
-
-build-release: target/$(TGT)/release/atomos
-
-target/$(TGT)/release/atomos:
-	cargo build --target $(TGT) --release
 
 clean:
 	cargo clean
